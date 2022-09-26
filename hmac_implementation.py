@@ -1,11 +1,16 @@
+"""
+    hmac help us to to use any ordinary hash funtion as it were keyed
+    hash function An HMAC need three inputs: key, message and crypto
+    hash function. Key and Message are byte
+"""
 import hashlib
 import hmac
 
-# hmac help us to to use any ordinary hash funtion as it were keyed
-# hash function An HMAC need three inputs: key, message and crypto
-# hash function. Key and Message are byte
 
 def hmac_f(key, data, hash_function):
+    """
+        ciphering data
+    """
     return hmac.new(key=key, msg=data, digestmod=hash_function)
 
 

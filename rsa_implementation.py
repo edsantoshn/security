@@ -3,10 +3,10 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 
 
-def generation_key_pair() -> tuple(rsa.RSAPublicKey, rsa.RSAPrivateKey):
+def generation_key_pair():
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=3072, backend=default_backend())
     public_key = private_key.public_key()
-    return tuple(public_key, private_key)
+    return public_key, private_key
 
 
 def serialization_key_pair(private_key, public_key) -> bool:
@@ -32,7 +32,7 @@ def serialization_key_pair(private_key, public_key) -> bool:
         return True
 
 
-def deserialization_files(private_key_file=None, public_key_file=None) -> dict(bytes, bytes):
+def deserialization_files(private_key_file=None, public_key_file=None):
     load_public_key, load_private_key = None, None
     if private_key_file:
         with open(private_key_file, 'rb') as private_file:
@@ -51,7 +51,7 @@ def deserialization_files(private_key_file=None, public_key_file=None) -> dict(b
 
 
 
-def encrypting_data(data, public_key) -> dict(bytes, bytes):
+def encrypting_data(data, public_key):
     padding_config = padding.OAEP(
                     mgf=padding.MGF1(algorithm=hashes.SHA256()),
                     algorithm=hashes.SHA256(),
@@ -68,3 +68,29 @@ def decryting_data(ciphertext, private_key) -> str:
     plaintext = private_key.decrypt(ciphertext=ciphertext, padding=padding_config)
     return plaintext
 
+
+
+if __name__ == "__main__":
+    p_key, pp_key = generation_key_pair()
+    code = """"
+    identidad = '0101195500920'
+    def obtener_deuda_simple(identidad):
+        identidad = "'{0}'".format(identidad)
+        try:
+            cursor = _conexion_saft_sql_server()
+            consulta = "Select p.numero_factura, p.Descripcion, p.fecha_vencimiento, sum(p.monto) [monto] from (select AvPgEnc.NumAvPg as numero_factura, AvPgEnc.AvPgDescripcion as Descripcion, sum(case when AvPgDetalle.CantAvPgDet > 1 then AvPgDetalle.ValorUnitAvPgDet*AvPgDetalle.CantAvPgDet else AvPgDetalle.ValorUnitAvPgDet end) as monto, AvPgEnc.FechaVenceAvPg as fecha_vencimiento, AvPgEnc.ClaveCatastro as clave_catastral, max(AvPgDetalle.RefAvPgDet) as declaracion_ic from AvPgEnc inner join AvPgDetalle on AvPgEnc.NumAvPg = AvPgDetalle.NumAvPg where AvPgEnc.AvPgEstado = 1 and AvPgEnc.Identidad = convert(nvarchar,{0}) group by AvPgEnc.NumAvPg, AvPgEnc.AvPgDescripcion, AvPgEnc.AvPgTipoImpuesto, AvPgEnc.FechaVenceAvPg, AvPgEnc.ClaveCatastro, AvPgDetalle.CantAvPgDet) p group by p.numero_factura, p.Descripcion, p.fecha_vencimiento order by p.fecha_vencimiento".format(str(identidad))
+            cursor.execute(consulta)
+
+            data = cursor.fetchone()
+            cursor.close()
+            return data
+
+        except Exception as e:
+            print("Error: ", e)
+    """
+    code = bytes(code, encoding='utf-8')
+    cypher_text = encrypting_data(code, p_key)
+    text = decryting_data(cypher_text, pp_key)
+    print(cypher_text)
+    print()
+    print(text)
